@@ -1,56 +1,40 @@
-import smtplib
-import ssl
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import urllib.request
+import urllib.parse
+import json
 from typing import List
 from scrapers.base import Listing
 
 
 def send_alert(listings: List[Listing]) -> None:
-    """Stuur een e-mail met nieuwe woningaanbiedingen."""
-    sender = os.environ["GMAIL_ADDRESS"]
-    password = os.environ["GMAIL_APP_PASSWORD"]
-    recipient = os.environ["RECIPIENT_EMAIL"]
+    token = os.environ["TELEGRAM_BOT_TOKEN"]
+    chat_id = os.environ["TELEGRAM_CHAT_ID"]
 
-    subject = f"🏠 {len(listings)} nieuwe woning(en) in Amsterdam"
+    lines = [f"🏠 *{len(listings)} nieuwe woning(en) in Amsterdam*\n"]
+    for l in listings:
+        price_str = f"€{l.price}/mnd" if l.price else "prijs onbekend"
+        bedrooms_str = f"{l.bedrooms} slaapkamers" if l.bedrooms else ""
+        m2_str = f"{l.m2} m²" if l.m2 else ""
+        details = " · ".join(filter(None, [price_str, bedrooms_str, m2_str, l.neighborhood, l.postcode]))
+        title = l.title or l.source
+        lines.append(f"[{title}]({l.url})\n{details}\n")
 
-    text_parts = [f"{len(listings)} nieuwe woning(en) gevonden:\n"]
-    html_parts = [
-        "<html><body>",
-        f"<h2>{len(listings)} nieuwe woning(en) gevonden</h2>",
-    ]
+    text = "\n".join(lines)
 
-    for listing in listings:
-        text_parts.append("-" * 50)
-        text_parts.append(listing.summary())
-        text_parts.append("")
+    data = urllib.parse.urlencode({
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": "true",
+    }).encode()
 
-        price_str = f"€{listing.price}/mnd" if listing.price else "prijs onbekend"
-        bedrooms_str = f"{listing.bedrooms} slaapkamers" if listing.bedrooms else ""
-        m2_str = f"{listing.m2} m²" if listing.m2 else ""
-        details = " · ".join(filter(None, [price_str, bedrooms_str, m2_str, listing.neighborhood, listing.postcode]))
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=data,
+    )
+    with urllib.request.urlopen(req) as resp:
+        result = json.loads(resp.read())
+        if not result.get("ok"):
+            raise RuntimeError(f"Telegram fout: {result}")
 
-        html_parts.append(f"""
-        <div style="border:1px solid #ddd;padding:12px;margin:8px 0;border-radius:4px;">
-          <strong><a href="{listing.url}">{listing.title or listing.source}</a></strong><br>
-          <span style="color:#555">{details}</span><br>
-          <small style="color:#888">{listing.source}</small>
-          {f'<br><small>Beschikbaar: {listing.available_from}</small>' if listing.available_from else ''}
-        </div>""")
-
-    html_parts.append("</body></html>")
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = recipient
-    msg.attach(MIMEText("\n".join(text_parts), "plain", "utf-8"))
-    msg.attach(MIMEText("\n".join(html_parts), "html", "utf-8"))
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender, password)
-        server.sendmail(sender, recipient, msg.as_string())
-
-    print(f"E-mail verstuurd met {len(listings)} listing(s) naar {recipient}")
+    print(f"Telegram bericht verstuurd met {len(listings)} listing(s)")
