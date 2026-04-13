@@ -1,0 +1,50 @@
+name: Amsterdam Rental Scraper
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+
+      - name: Laad seen.json van data-branch
+        run: |
+          git fetch origin data 2>/dev/null || true
+          git checkout origin/data -- seen.json 2>/dev/null || echo '[]' > seen.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installeer dependencies
+        run: pip install -r requirements.txt
+
+      - name: Installeer Playwright browser
+        run: playwright install chromium --with-deps
+
+      - name: Draai scraper
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          PLAYWRIGHT_HEADLESS: 'true'
+        run: python main.py
+
+      - name: Sla seen.json op naar data-branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp seen.json /tmp/seen.json
+          git fetch origin data 2>/dev/null && git checkout data \
+            || (git checkout --orphan data && git rm -rf . -q 2>/dev/null || true)
+          cp /tmp/seen.json seen.json
+          git add seen.json
+          git diff --cached --quiet || git commit -m "chore: update seen.json"
+          git push origin data
