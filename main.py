@@ -78,7 +78,7 @@ def run_requests_scrapers() -> list:
 def main():
     seen = load_seen()
 
-    headless = os.environ.get("PLAYWRIGHT_HEADLESS", "false").lower() == "true"
+    headless = os.environ.get("PLAYWRIGHT_HEADLESS", "false").lower() != "false"
 
     all_listings = []
     all_listings.extend(run_playwright_scrapers(headless))

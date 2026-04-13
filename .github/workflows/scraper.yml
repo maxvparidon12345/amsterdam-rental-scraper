@@ -29,16 +29,21 @@ jobs:
       - name: Installeer dependencies
         run: pip install -r requirements.txt
 
-      - name: Installeer Playwright browser
-        run: playwright install chromium --with-deps
+      - name: Installeer xvfb en Playwright browser
+        run: |
+          sudo apt-get install -y xvfb
+          playwright install chromium --with-deps
 
       - name: Draai scraper
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-          PLAYWRIGHT_HEADLESS: 'true'
-        run: python main.py
+          DISPLAY: ':99'
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 &
+          sleep 1
+          python main.py
 
       - name: Zorg dat seen.json bestaat voor cache
         run: test -f seen.json || echo '[]' > seen.json
