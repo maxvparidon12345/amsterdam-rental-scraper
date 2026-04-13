@@ -67,31 +67,39 @@ def scrape(page: Page) -> List[Listing]:
     """Scrape Funda listings. Verwacht een open Playwright page-object."""
     from bs4 import BeautifulSoup
 
-    page.goto(SEARCH_URL, timeout=30000)
-    time.sleep(7)
-    # Scroll naar beneden om meer listings te laden
-    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    time.sleep(3)
-
-    soup = BeautifulSoup(page.content(), "lxml")
-    containers = [
-        d for d in soup.find_all("div")
-        if "@container" in " ".join(d.get("class", []))
-        and "border-b" in " ".join(d.get("class", []))
-    ]
-
-    listings = []
+    all_listings = []
     seen_ids = set()
-    for container in containers:
-        link_tag = container.select_one('a[href*="/detail/"]')
-        if not link_tag:
-            continue
-        try:
-            listing = _parse_container(container)
-            if listing.id not in seen_ids:
-                seen_ids.add(listing.id)
-                listings.append(listing)
-        except Exception:
-            pass
 
-    return listings
+    for page_num in range(1, 11):  # max 10 pagina's (~150 listings)
+        url = SEARCH_URL + f"&search_result={page_num}"
+        page.goto(url, timeout=30000)
+        time.sleep(7)
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        time.sleep(3)
+
+        soup = BeautifulSoup(page.content(), "lxml")
+        containers = [
+            d for d in soup.find_all("div")
+            if "@container" in " ".join(d.get("class", []))
+            and "border-b" in " ".join(d.get("class", []))
+        ]
+
+        page_listings = []
+        for container in containers:
+            link_tag = container.select_one('a[href*="/detail/"]')
+            if not link_tag:
+                continue
+            try:
+                listing = _parse_container(container)
+                if listing.id not in seen_ids:
+                    seen_ids.add(listing.id)
+                    page_listings.append(listing)
+            except Exception:
+                pass
+
+        if not page_listings:
+            break  # geen nieuwe listings op deze pagina → stop
+
+        all_listings.extend(page_listings)
+
+    return all_listings
