@@ -93,10 +93,10 @@ def main():
     )
 
     if new_listings:
-        send_alert(new_listings)
         for listing in new_listings:
             seen.add(listing.id)
         save_seen(seen)
+        send_alert(new_listings)
     else:
         print("Geen nieuwe listings gevonden.")
 
