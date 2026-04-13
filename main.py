@@ -84,9 +84,6 @@ def main():
     all_listings.extend(run_playwright_scrapers(headless))
     all_listings.extend(run_requests_scrapers())
 
-    for l in all_listings[:5]:
-        print(f"  DEBUG: prijs={l.price} slaapkamers={l.bedrooms} postcode={l.postcode!r} buurt={l.neighborhood!r} titel={l.title!r}")
-
     filtered = apply_filters(all_listings)
     new_listings = [l for l in filtered if l.id not in seen]
 

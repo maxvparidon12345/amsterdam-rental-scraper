@@ -49,9 +49,7 @@ def _parse_container(container) -> Listing:
         elif re.fullmatch(r"\d+", text):
             rooms = int(text)
 
-    # Bedrooms = rooms (Funda toont hier het totaal aantal kamers)
-    # Veilige benadering: sla listings door zonder kamerinfo niet weg
-    bedrooms = max(rooms - 1, 1) if rooms else None
+    bedrooms = rooms if rooms else None
 
     return Listing(
         id=listing_id,
