@@ -39,10 +39,10 @@ def send_alert(listings: List[Listing]) -> None:
         m2_str = f"{l.m2} m²" if l.m2 else ""
         details = " · ".join(filter(None, [price_str, bedrooms_str, m2_str, l.postcode]))
         title = l.title or l.source
-        text = f"🏠 *Nieuwe woning*\n[{title}]({l.url})\n{details}"
+        text = f"🏠 *Nieuwe woning — {l.source}*\n[{title}]({l.url})\n{details}"
         _send_message(token, chat_id, text)
 
     if overflow > 0:
-        _send_message(token, chat_id, f"📋 En nog *{overflow}* andere nieuwe woningen — check Funda voor het volledige overzicht.")
+        _send_message(token, chat_id, f"📋 En nog *{overflow}* andere nieuwe woningen — check de websites voor het volledige overzicht.")
 
     print(f"Telegram bericht verstuurd met {len(listings)} listing(s)")

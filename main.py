@@ -6,7 +6,11 @@ import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-from scrapers import funda
+from scrapers import funda, pararius
+from scrapers import (
+    woningdelersclub, rotsvast, amstelland, newcurb,
+    mva, amsterdamhousing, househunting, interhouse, huis27,
+)
 from filters import apply_filters
 from notifier import send_alert
 
@@ -15,14 +19,20 @@ SEEN_FILE = Path("seen.json")
 # Playwright scrapers: tuples van (naam, scrape-functie)
 PLAYWRIGHT_SCRAPERS = [
     ("Funda", funda.scrape),
-    # Voeg hier nieuwe Playwright-scrapers toe, bijv.:
-    # ("Pararius", pararius.scrape),
+    ("Pararius", pararius.scrape),
+    ("MVA Makelaars", mva.scrape),
+    ("Amsterdam Housing", amsterdamhousing.scrape),
+    ("HouseHunting Amsterdam", househunting.scrape),
+    ("Interhouse Amsterdam", interhouse.scrape),
+    ("27Huis", huis27.scrape),
 ]
 
 # requests+BS4 scrapers: tuples van (naam, scrape-functie)
 REQUESTS_SCRAPERS = [
-    # Voeg hier nieuwe requests-scrapers toe, bijv.:
-    # ("Vesteda", vesteda.scrape),
+    ("Woning Delers Club", woningdelersclub.scrape),
+    ("Rotsvast Amsterdam", rotsvast.scrape),
+    ("Amstelland Makelaars", amstelland.scrape),
+    ("NEWCURB Makelaars", newcurb.scrape),
 ]
 
 
